@@ -93,8 +93,8 @@ class CofRequestPayloads {
 	  				},
 	  				"consentId": "${consentId}",
 					"resourceParams": {
-						"resource": "/aisp/accounts",
-						"context": "/open-banking/v3.1/aisp",
+						"resource": "/cbpii/funds-confirmation-consents/${consentId}/funds-confirmation",
+						"context": "/open-banking/v3.1/cbpii",
 						"httpMethod": "GET"
 	  				},
 	  				"userId": "${userId}",

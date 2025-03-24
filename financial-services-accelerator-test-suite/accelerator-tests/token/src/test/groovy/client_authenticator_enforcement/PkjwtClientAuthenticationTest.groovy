@@ -18,6 +18,7 @@
 
 package client_authenticator_enforcement
 
+import org.testng.annotations.BeforeClass
 import org.wso2.openbanking.test.framework.utility.OBTestUtil
 import io.restassured.response.Response
 import org.testng.Assert
@@ -34,6 +35,11 @@ class PkjwtClientAuthenticationTest extends FSConnectorTest {
     String clientId
     ConnectorTestConstants.ApiScope scope = ConnectorTestConstants.ApiScope.ACCOUNTS
     private ConfigurationService configuration = new ConfigurationService()
+
+    @BeforeClass
+    void setup() {
+        configuration.setTppNumber(0)
+    }
 
     @Test (priority = 0)
     void "Validate token request with deleted client_id for iss and sub in client_assertion"() {

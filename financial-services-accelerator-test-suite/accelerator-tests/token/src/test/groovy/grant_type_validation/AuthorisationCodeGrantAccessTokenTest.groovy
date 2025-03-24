@@ -56,6 +56,7 @@ class AuthorisationCodeGrantAccessTokenTest extends FSConnectorTest {
 	@Test
 	void "Generate authorization code grant access token with pkjwt authentication"() {
 
+		configuration.setTppNumber(0)
 		authoriseConsent()
 		Response tokenResponse = getUserAccessTokenResponse(ConnectorTestConstants.PKJWT_AUTH_METHOD, clientId,
 				code, consentScopes)
@@ -72,7 +73,7 @@ class AuthorisationCodeGrantAccessTokenTest extends FSConnectorTest {
 
 	@Test (dependsOnMethods = "Generate authorization code grant access token with pkjwt authentication")
 	void "Validate keyid of user access token jwt"() {
-
+		configuration.setTppNumber(0)
 		HashMap<String, String> mapHeader = TestUtil.getJwtTokenHeader(accessToken)
 
 		Assert.assertNotNull(mapHeader.get(ConnectorTestConstants.KID))
@@ -80,15 +81,16 @@ class AuthorisationCodeGrantAccessTokenTest extends FSConnectorTest {
 
 	@Test (dependsOnMethods = "Validate keyid of user access token jwt")
 	void "Validate additional claim binding to the user access token jwt"() {
-
+		configuration.setTppNumber(0)
 		HashMap<String, String> mapPayload = TestUtil.getJwtTokenPayload(accessToken)
 
 		Assert.assertTrue(mapPayload.get(ConnectorTestConstants.CNF).matches("x5t#S256:[a-zA-Z0-9-]+"))
+		Assert.assertTrue(mapPayload.get(ConnectorTestConstants.CONSENT_ID).matches(consentId))
 	}
 
 	@Test (dependsOnMethods = "Validate additional claim binding to the user access token jwt")
 	void "Validate additional claims not binding to the id_token of user access token"() {
-
+		configuration.setTppNumber(0)
 		HashMap<String, String> mapPayload = TestUtil.getJwtTokenPayload(idToken)
 
 		Assert.assertNull(mapPayload.get(ConnectorTestConstants.CNF))
@@ -98,11 +100,32 @@ class AuthorisationCodeGrantAccessTokenTest extends FSConnectorTest {
 	@Test (dependsOnMethods = "Validate additional claims not binding to the id_token of user access token")
 	void "Introspection call for user access token"() {
 
+		configuration.setTppNumber(0)
 		Response tokenResponse = getTokenIntrospectionResponse(accessToken)
 		Assert.assertEquals(tokenResponse.statusCode(), ConnectorTestConstants.STATUS_CODE_200)
 		Assert.assertEquals(TestUtil.parseResponseBody(tokenResponse, "active"), "true")
 		Assert.assertNull(TestUtil.parseResponseBody(tokenResponse, ConnectorTestConstants.GRANT_TYPE))
-		Assert.assertNotNull(TestUtil.parseResponseBody(tokenResponse, ConnectorTestConstants.CNF))
+		Assert.assertNull(TestUtil.parseResponseBody(tokenResponse, ConnectorTestConstants.CNF))
+		Assert.assertNull(TestUtil.parseResponseBody(tokenResponse, ConnectorTestConstants.CONSENT_ID))
+		Assert.assertNotNull(TestUtil.parseResponseBody(tokenResponse, ConnectorTestConstants.REFRESH_TOKEN_VALIDITY_PERIOD))
+	}
+
+	@Test (dependsOnMethods = "Validate additional claims not binding to the id_token of user access token")
+	void "Validate keyId of user access token id_token"() {
+
+		Map<String, String> mapHeader = TestUtil.getJwtTokenHeader(idToken)
+
+		Assert.assertNotNull(mapHeader.get(ConnectorTestConstants.KID))
+	}
+
+	@Test (dependsOnMethods = "Validate keyId of user access token id_token")
+	void "Validate certificate hash binding to the user access token jwt"() {
+
+		//Validate Access Token JWT
+		Map<String, String> mapPayload = TestUtil.getJwtTokenPayload(idToken)
+		Assert.assertNull(mapPayload.get(ConnectorTestConstants.CNF))
+		Assert.assertNull(mapPayload.get(ConnectorTestConstants.GRANT_TYPE))
+		Assert.assertNull(mapPayload.get(ConnectorTestConstants.CONSENT_ID))
 	}
 
 	@Test

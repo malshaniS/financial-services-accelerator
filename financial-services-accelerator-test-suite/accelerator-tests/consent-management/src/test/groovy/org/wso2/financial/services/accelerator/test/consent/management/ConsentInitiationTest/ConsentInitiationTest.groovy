@@ -48,6 +48,26 @@ class ConsentInitiationTest extends FSConnectorTest {
         doDefaultInitiation()
         Assert.assertNotNull(consentId)
         Assert.assertEquals(consentResponse.getStatusCode(), ConnectorTestConstants.STATUS_CODE_201)
+
+        Assert.assertNotNull(TestUtil.parseResponseBody(consentResponse,
+                ConnectorTestConstants.DATA_CONSENT_ID).toString())
+        Assert.assertEquals(TestUtil.parseResponseBody(consentResponse,
+                ConnectorTestConstants.DATA_STATUS).toString(), ConnectorTestConstants.AWAITING_AUTHORISATION)
+        Assert.assertNotNull(TestUtil.parseResponseBody(consentResponse,
+                ConnectorTestConstants.DATA_STATUS_UPDATE_DATE_TIME))
+        Assert.assertNotNull(TestUtil.parseResponseBody(consentResponse,
+                ConnectorTestConstants.DATA_CREATION_DATE_TIME_VALUE))
+        Assert.assertNotNull(TestUtil.parseResponseBody(consentResponse, ConnectorTestConstants.DATA_PERMISSIONS_VALUE))
+        Assert.assertNotNull(TestUtil.parseResponseBody(consentResponse,
+                ConnectorTestConstants.DATA_EXPIRATION_DATE_TIME_VALUE))
+        Assert.assertNotNull(TestUtil.parseResponseBody(consentResponse,
+                ConnectorTestConstants.DATA_TRANSACTION_FROM_DATE_TIME_VALUE))
+        Assert.assertNotNull(TestUtil.parseResponseBody(consentResponse,
+                ConnectorTestConstants.DATA_TRANSACTION_TO_DATE_TIME_VALUE))
+        Assert.assertNotNull(TestUtil.parseResponseBody(consentResponse, ConnectorTestConstants.RISK))
+        Assert.assertEquals(TestUtil.parseResponseBody(consentResponse, ConnectorTestConstants.SELF_LINK),
+                configuration.getISServerUrl() + ConnectorTestConstants.ACCOUNT_CONSENT_PATH + "/" + consentId)
+        Assert.assertNotNull(TestUtil.parseResponseBody(consentResponse, ConnectorTestConstants.META_TOTAL_PAGES))
     }
 
     @Test

@@ -46,7 +46,8 @@ class AccountsRequestPayloads {
             ConnectorTestConstants.READ_ACCOUNTS_BASIC,
             ConnectorTestConstants.READ_ACCOUNTS_DETAIL,
             ConnectorTestConstants.READ_BALANCES,
-            ConnectorTestConstants.READ_TRANSACTIONS_DETAIL
+            ConnectorTestConstants.READ_TRANSACTIONS_DETAIL,
+            ConnectorTestConstants.READ_TRANSACTIONS_CREDITS
     ]
 
     static String[] permissionsArrayWithoutReadAccountsDetail = [

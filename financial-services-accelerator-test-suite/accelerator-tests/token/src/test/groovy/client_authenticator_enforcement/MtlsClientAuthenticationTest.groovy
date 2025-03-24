@@ -38,7 +38,6 @@ class MtlsClientAuthenticationTest extends FSConnectorTest {
     @Test
     void "OB-486_MTLS Client Authentication with mtls header, client id, client_assertion and client assertion type"(){
 
-
         clientId = configuration.getAppInfoClientID()
         Response tokenResponse = getApplicationAccessTokenResponse(ConnectorTestConstants.PKJWT_AUTH_METHOD,
                 clientId, [scope])

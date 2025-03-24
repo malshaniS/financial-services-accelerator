@@ -27,7 +27,6 @@ class AccountsDataProviders {
     Object[] getInvalidAccountsPermissionsForInitiation() {
 
         def invalidPermissions = new ArrayList<Object[]>()
-        invalidPermissions.add([] as Object)
         invalidPermissions.add([ConnectorTestConstants.READ_ACCOUNTS_BASIC, "xyz"] as Object)
         invalidPermissions.add([ConnectorTestConstants.READ_BALANCES] as Object)
         invalidPermissions.add([ConnectorTestConstants.READ_ACCOUNTS_BASIC, ConnectorTestConstants.READ_TRANSACTIONS_BASIC] as Object)
@@ -55,5 +54,24 @@ class AccountsDataProviders {
                               , ConnectorTestConstants.READ_TRANSACTIONS_DEBITS] as Object)
 
         return validPermissions
+    }
+
+    @DataProvider(name = "InvalidXfapiInteractionId")
+    Object[][] getInvalidXfapiInteractionId() {
+
+        def invalidXfapiInteractionId = new ArrayList<Object[]>()
+        invalidXfapiInteractionId.add([[""], [true]] as Object)
+        invalidXfapiInteractionId.add([[TestUtil.generateUUID()], [true]] as Object)
+
+        return invalidXfapiInteractionId
+    }
+
+    @DataProvider(name = "EmptyAccountsPermissionsForInitiation")
+    Object[] getEmptyAccountsPermissionsForInitiation() {
+
+        def invalidPermissions = new ArrayList<Object[]>()
+        invalidPermissions.add([] as Object)
+
+        return invalidPermissions
     }
 }

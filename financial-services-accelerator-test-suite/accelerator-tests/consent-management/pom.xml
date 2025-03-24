@@ -136,7 +136,7 @@
         </plugins>
         <resources>
             <resource>
-                <directory>${project.basedir}/../resources</directory>
+                <directory>${project.basedir}/../../accelerator-test-framework/src/main/resources</directory>
             </resource>
         </resources>
     </build>

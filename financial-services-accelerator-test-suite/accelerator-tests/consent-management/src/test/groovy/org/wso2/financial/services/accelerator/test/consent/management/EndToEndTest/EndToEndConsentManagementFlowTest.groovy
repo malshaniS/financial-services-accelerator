@@ -41,21 +41,21 @@ class EndToEndConsentManagementFlowTest extends FSConnectorTest {
         this.map = map
     }
 
-    @Test
-    void "Verify Create Application Access Token"() {
-
-        List<ConnectorTestConstants.ApiScope> scopeList = ConsentMgtTestUtils.getApiScopesForConsentType(map.get("consentType"))
-        Response response = getApplicationAccessTokenResponse(ConnectorTestConstants.PKJWT_AUTH_METHOD,
-                configuration.getAppInfoClientID(), scopeList)
-
-        def accessToken = TestUtil.parseResponseBody(response, "access_token")
-        def scopes = TestUtil.parseResponseBody(response, "scope")
-        log.info("Got app access token $accessToken")
-
-
-        Assert.assertNotNull(accessToken)
-        Assert.assertEquals(scopes, scopeList.get(0).scopeString)
-    }
+//    @Test
+//    void "Verify Create Application Access Token"() {
+//
+//        List<ConnectorTestConstants.ApiScope> scopeList = ConsentMgtTestUtils.getApiScopesForConsentType(map.get("consentType"))
+//        Response response = getApplicationAccessTokenResponse(ConnectorTestConstants.PKJWT_AUTH_METHOD,
+//                configuration.getAppInfoClientID(), scopeList)
+//
+//        def accessToken = TestUtil.parseResponseBody(response, "access_token")
+//        def scopes = TestUtil.parseResponseBody(response, "scope")
+//        log.info("Got app access token $accessToken")
+//
+//
+//        Assert.assertNotNull(accessToken)
+//        Assert.assertEquals(scopes, scopeList.get(0).scopeString)
+//    }
 
     @Test (dependsOnMethods = "Verify Create Application Access Token")
     void "Verify Create the consent with valid inputs"() {

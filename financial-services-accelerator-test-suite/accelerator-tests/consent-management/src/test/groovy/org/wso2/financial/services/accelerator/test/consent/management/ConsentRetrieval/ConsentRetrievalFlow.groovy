@@ -31,6 +31,8 @@ import org.wso2.financial.services.accelerator.test.framework.constant.AccountsR
 import org.wso2.financial.services.accelerator.test.framework.utility.ConsentMgtTestUtils
 import org.wso2.financial.services.accelerator.test.framework.utility.TestUtil
 
+import java.nio.charset.Charset
+
 /**
  * Consent Retrieval  class
  */
@@ -76,8 +78,10 @@ class ConsentRetrievalFlow extends FSConnectorTest {
     @Test
     void "TC0202012_Get Accounts Initiation With Invalid Authorization Header"() {
 
-        def basicHeader = getBasicAuthHeader(configurationService.getUserPSUName(),
-                configurationService.getUserPSUPWD())
+        configuration.setPsuNumber(1)
+
+        def basicHeader = getBasicAuthHeader(configuration.getUserPSUName(),
+                configuration.getUserPSUPWD())
 
         doDefaultInitiation()
         consentResponse = FSRestAsRequestBuilder.buildRequest()
@@ -336,5 +340,189 @@ class ConsentRetrievalFlow extends FSConnectorTest {
         Assert.assertEquals(consentResponse.getStatusCode(), ConnectorTestConstants.STATUS_CODE_200)
         String status = OBTestUtil.parseResponseBody(consentResponse, "Data.Status")
         Assert.assertEquals(status, "AwaitingAuthorisation")
+    }
+
+    @Test
+    void "TC0202004_Get Accounts Initiation With Authorization Code Type Access Token"() {
+
+        if (userAccessToken == null) {
+            doDefaultInitiation()
+            doConsentAuthorisation(configuration.getAppInfoClientID(), true, consentScopes)
+            userAccessToken = getUserAccessToken(code, consentScopes)
+        }
+
+        consentResponse = FSRestAsRequestBuilder.buildRequest()
+                .contentType(ContentType.JSON)
+                .header(ConnectorTestConstants.X_FAPI_FINANCIAL_ID, ConnectorTestConstants.X_FAPI_FINANCIAL_ID_VALUE)
+                .header(ConnectorTestConstants.X_WSO2_CLIENT_ID_KEY, configuration.getAppInfoClientID())
+                .header(ConnectorTestConstants.AUTHORIZATION_HEADER, userAccessToken)
+                .header(ConnectorTestConstants.X_FAPI_INTERACTION_ID, UUID.randomUUID().toString())
+                .baseUri(configuration.getISServerUrl())
+                .get(consentPath + "/${consentId}")
+
+        this.consentId = TestUtil.parseResponseBody(consentResponse, ConnectorTestConstants.DATA_CONSENT_ID).toString()
+
+        Assert.assertEquals(consentResponse.statusCode(), ConnectorTestConstants.STATUS_CODE_401)
+        def errorMessage = TestUtil.parseResponseBody(consentResponse, ConnectorTestConstants.ERROR_MESSAGE)
+        Assert.assertEquals(errorMessage, "Incorrect Access Token Type provided")
+        Assert.assertEquals(TestUtil.parseResponseBody(consentResponse, ConnectorTestConstants.ERROR_CODE),
+                ConnectorTestConstants.OBIE_ERROR_HEADER_INVALID)
+    }
+
+    @Test
+    void "TC0202010_Get Accounts Initiation With TPP Defined x-fapi-interaction-id Header"() {
+
+        doDefaultInitiation()
+        def xfapiInteractionId = TestUtil.generateUUID()
+
+        def authToken = "${configurationService.getUserKeyManagerAdminName()}:" +
+                "${configurationService.getUserKeyManagerAdminPWD()}"
+        def basicHeader = "Basic ${Base64.encoder.encodeToString(authToken.getBytes(Charset.defaultCharset()))}"
+
+        consentResponse = FSRestAsRequestBuilder.buildRequest()
+                .contentType(ContentType.JSON)
+                .header(ConnectorTestConstants.X_FAPI_FINANCIAL_ID, xfapiInteractionId)
+                .header(ConnectorTestConstants.X_WSO2_CLIENT_ID_KEY, configuration.getAppInfoClientID())
+                .header(ConnectorTestConstants.AUTHORIZATION_HEADER, basicHeader)
+                .header(ConnectorTestConstants.X_FAPI_INTERACTION_ID, UUID.randomUUID().toString())
+                .get(consentPath + "/" + consentId)
+
+        Assert.assertEquals(consentResponse.statusCode(), ConnectorTestConstants.STATUS_CODE_200)
+        Assert.assertEquals(consentResponse.getHeader(ConnectorTestConstants.X_FAPI_INTERACTION_ID), xfapiInteractionId)
+    }
+
+    @Test
+    void "TC0202013_Get Accounts Initiation Without Specifying Accept Header"() {
+
+        doDefaultInitiation()
+        def authToken = "${configurationService.getUserKeyManagerAdminName()}:" +
+                "${configurationService.getUserKeyManagerAdminPWD()}"
+        def basicHeader = "Basic ${Base64.encoder.encodeToString(authToken.getBytes(Charset.defaultCharset()))}"
+
+        consentResponse = FSRestAsRequestBuilder.buildRequest()
+                .contentType(ContentType.JSON)
+                .header(ConnectorTestConstants.X_FAPI_FINANCIAL_ID, ConnectorTestConstants.X_FAPI_FINANCIAL_ID_VALUE)
+                .header(ConnectorTestConstants.X_WSO2_CLIENT_ID_KEY, configuration.getAppInfoClientID())
+                .header(ConnectorTestConstants.AUTHORIZATION_HEADER, basicHeader)
+                .header(ConnectorTestConstants.X_FAPI_INTERACTION_ID, UUID.randomUUID().toString())
+                .get(consentPath + "/" + consentId)
+
+        Assert.assertEquals(consentResponse.statusCode(), ConnectorTestConstants.STATUS_CODE_200)
+    }
+
+    //TODO: Uncomment after fixing: https://github.com/wso2-enterprise/financial-open-banking/issues/7965
+//    @Test
+    void "TC0202014_Get Accounts Initiation With Invalid Accept Header"() {
+
+        doDefaultInitiation()
+
+        def authToken = "${configurationService.getUserKeyManagerAdminName()}:" +
+                "${configurationService.getUserKeyManagerAdminPWD()}"
+        def basicHeader = "Basic ${Base64.encoder.encodeToString(authToken.getBytes(Charset.defaultCharset()))}"
+
+        consentResponse = FSRestAsRequestBuilder.buildRequest()
+                .contentType(ContentType.JSON)
+                .accept(ContentType.XML)
+                .header(ConnectorTestConstants.X_FAPI_FINANCIAL_ID, ConnectorTestConstants.X_FAPI_FINANCIAL_ID_VALUE)
+                .header(ConnectorTestConstants.X_WSO2_CLIENT_ID_KEY, configuration.getAppInfoClientID())
+                .header(ConnectorTestConstants.AUTHORIZATION_HEADER, basicHeader)
+                .header(ConnectorTestConstants.X_FAPI_INTERACTION_ID, UUID.randomUUID().toString())
+                .get(consentPath + "/" + consentId)
+
+        Assert.assertEquals(consentResponse.statusCode(), ConnectorTestConstants.STATUS_CODE_406)
+        def errorMessage = TestUtil.parseResponseBody(consentResponse, ConnectorTestConstants.ERROR_MESSAGE)
+        Assert.assertTrue(errorMessage.contains("Request Accept header 'application' is not a valid media type"))
+        def errorCode = TestUtil.parseResponseBody(consentResponse, ConnectorTestConstants.ERROR_CODE)
+        Assert.assertEquals(errorCode, ConnectorTestConstants.OBIE_ERROR_HEADER_INVALID)
+    }
+
+    @Test
+    void "TC0202015_Get Accounts Initiation With Empty Consent Id"() {
+
+        doDefaultInitiation()
+
+        def consentid = ""
+
+        def authToken = "${configurationService.getUserKeyManagerAdminName()}:" +
+                "${configurationService.getUserKeyManagerAdminPWD()}"
+        def basicHeader = "Basic ${Base64.encoder.encodeToString(authToken.getBytes(Charset.defaultCharset()))}"
+
+        consentResponse = FSRestAsRequestBuilder.buildRequest()
+                .contentType(ContentType.JSON)
+                .header(ConnectorTestConstants.X_FAPI_FINANCIAL_ID, ConnectorTestConstants.X_FAPI_FINANCIAL_ID_VALUE)
+                .header(ConnectorTestConstants.X_WSO2_CLIENT_ID_KEY, configuration.getAppInfoClientID())
+                .header(ConnectorTestConstants.AUTHORIZATION_HEADER, basicHeader)
+                .header(ConnectorTestConstants.X_FAPI_INTERACTION_ID, UUID.randomUUID().toString())
+                .get(consentPath + "/" + consentid)
+
+        Assert.assertEquals(consentResponse.statusCode(), ConnectorTestConstants.STATUS_CODE_405)
+        Assert.assertEquals(TestUtil.parseResponseBody(consentResponse, ConnectorTestConstants.ERROR_CODE),
+                ConnectorTestConstants.OBIE_ERROR_INVALID_FORMAT)
+        Assert.assertTrue(TestUtil.parseResponseBody(consentResponse, ConnectorTestConstants.ERROR_MESSAGE).contains(
+                "Method not allowed for given API resource"))
+    }
+
+    @Test
+    void "TC0202016_Get Accounts Initiation Without Consent Id Parameter"() {
+
+        def authToken = "${configurationService.getUserKeyManagerAdminName()}:" +
+                "${configurationService.getUserKeyManagerAdminPWD()}"
+        def basicHeader = "Basic ${Base64.encoder.encodeToString(authToken.getBytes(Charset.defaultCharset()))}"
+
+        consentResponse = FSRestAsRequestBuilder.buildRequest()
+                .contentType(ContentType.JSON)
+                .header(ConnectorTestConstants.X_FAPI_FINANCIAL_ID, ConnectorTestConstants.X_FAPI_FINANCIAL_ID_VALUE)
+                .header(ConnectorTestConstants.X_WSO2_CLIENT_ID_KEY, configuration.getAppInfoClientID())
+                .header(ConnectorTestConstants.AUTHORIZATION_HEADER, basicHeader)
+                .header(ConnectorTestConstants.X_FAPI_INTERACTION_ID, UUID.randomUUID().toString())
+                .get(consentPath + "/")
+
+        Assert.assertEquals(consentResponse.statusCode(), ConnectorTestConstants.STATUS_CODE_405)
+        Assert.assertEquals(TestUtil.parseResponseBody(consentResponse, ConnectorTestConstants.ERROR_CODE),
+                ConnectorTestConstants.OBIE_ERROR_INVALID_FORMAT)
+        Assert.assertTrue(TestUtil.parseResponseBody(consentResponse, ConnectorTestConstants.ERROR_MESSAGE).contains(
+                "Method not allowed for given API resource"))
+    }
+
+    @Test
+    void "TC0202020_Get Accounts Initiation With x-fapi-customer-last_logged_time Header"() {
+        doDefaultInitiation()
+
+        def authToken = "${configurationService.getUserKeyManagerAdminName()}:" +
+                "${configurationService.getUserKeyManagerAdminPWD()}"
+        def basicHeader = "Basic ${Base64.encoder.encodeToString(authToken.getBytes(Charset.defaultCharset()))}"
+
+        consentResponse = FSRestAsRequestBuilder.buildRequest()
+                .contentType(ContentType.JSON)
+                .header(ConnectorTestConstants.X_FAPI_CUSTOMER_LAST_LOGGED_TIME,
+                        ConnectorTestConstants.X_FAPI_CUSTOMER_LAST_LOGGED_TIME_VALUE)
+                .header(ConnectorTestConstants.X_FAPI_FINANCIAL_ID, ConnectorTestConstants.X_FAPI_FINANCIAL_ID_VALUE)
+                .header(ConnectorTestConstants.X_WSO2_CLIENT_ID_KEY, configuration.getAppInfoClientID())
+                .header(ConnectorTestConstants.AUTHORIZATION_HEADER, basicHeader)
+                .header(ConnectorTestConstants.X_FAPI_INTERACTION_ID, UUID.randomUUID().toString())
+                .get(consentPath + "/" + consentId)
+
+        Assert.assertEquals(consentResponse.statusCode(), ConnectorTestConstants.STATUS_CODE_200)
+    }
+
+    @Test
+    void "TC0202021_Get Accounts Initiation With x-fapi-auth-date Header"() {
+        doDefaultInitiation()
+
+        def authToken = "${configurationService.getUserKeyManagerAdminName()}:" +
+                "${configurationService.getUserKeyManagerAdminPWD()}"
+        def basicHeader = "Basic ${Base64.encoder.encodeToString(authToken.getBytes(Charset.defaultCharset()))}"
+
+        consentResponse = FSRestAsRequestBuilder.buildRequest()
+                .contentType(ContentType.JSON)
+                .header(ConnectorTestConstants.X_FAPI_AUTH_DATE,
+                        ConnectorTestConstants.X_FAPI_AUTH_DATE_VALUE)
+                .header(ConnectorTestConstants.X_FAPI_FINANCIAL_ID, ConnectorTestConstants.X_FAPI_FINANCIAL_ID_VALUE)
+                .header(ConnectorTestConstants.X_WSO2_CLIENT_ID_KEY, configuration.getAppInfoClientID())
+                .header(ConnectorTestConstants.AUTHORIZATION_HEADER, basicHeader)
+                .header(ConnectorTestConstants.X_FAPI_INTERACTION_ID, UUID.randomUUID().toString())
+                .get(consentPath + "/" + consentId)
+
+        Assert.assertEquals(consentResponse.statusCode(), ConnectorTestConstants.STATUS_CODE_200)
     }
 }

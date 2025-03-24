@@ -18,6 +18,8 @@
 
 package org.wso2.financial.services.accelerator.test.framework
 
+import org.testng.Assert
+import org.wso2.financial.services.accelerator.test.framework.constant.PaymentRequestPayloads
 import org.wso2.financial.services.accelerator.test.framework.utility.ConsentMgtTestUtils
 import org.wso2.openbanking.test.framework.OBTest
 import org.wso2.openbanking.test.framework.automation.WaitForRedirectAutomationStep
@@ -83,6 +85,10 @@ class FSConnectorTest extends OBTest{
     def automation
     String userAccessToken
     static configurationService = new ConfigurationService()
+    Response fileUploadResponse
+    String payload
+    String path
+    String fundsConfirmPath
 
     //Consent scopes
     public List<ConnectorTestConstants.ApiScope> consentScopes = [
@@ -588,9 +594,14 @@ class FSConnectorTest extends OBTest{
      */
     Response doConsentRevocation(String consentId) {
 
+        def authToken = "${configurationService.getUserKeyManagerAdminName()}:" +
+                "${configurationService.getUserKeyManagerAdminPWD()}"
+        def basicHeader = "Basic ${Base64.encoder.encodeToString(authToken.getBytes(Charset.defaultCharset()))}"
+
         //initiation
         consentRevocationResponse = consentRequestBuilder.buildKeyManagerRequest(configuration.getAppInfoClientID())
                 .header(ConnectorTestConstants.X_FAPI_FINANCIAL_ID, ConnectorTestConstants.X_FAPI_FINANCIAL_ID_VALUE)
+                .header(ConnectorTestConstants.AUTHORIZATION_HEADER, basicHeader)
                 .baseUri(configuration.getISServerUrl())
                 .delete(consentPath + "/${consentId}")
 
@@ -819,4 +830,50 @@ class FSConnectorTest extends OBTest{
 
         return basicHeader
     }
+
+//    /**
+//     * Payment Initiation Request.
+//     * @param payload
+//     * @return
+//     */
+//    Response paymentInitiationRequest(String payload, String path) {
+//
+//        def consentResponse = consentRequestBuilder.buildKeyManagerRequest(configuration.getAppInfoClientID())
+//                .header(ConnectorTestConstants.X_IDEMPOTENCY_KEY, TestUtil.idempotency)
+//                .header(ConnectorTestConstants.X_JWS_SIGNATURE,TestUtil.generateXjwsSignature(TestUtil.requestHeader,
+//                        payload))
+//                .body(payload)
+//                .baseUri(configuration.getISServerUrl())
+//                .post(path)
+//
+//        return consentResponse
+//    }
+//
+//    void abstractPaymentFileUpload(String contentType, String accessToken) {
+//        fileUploadResponse = UKRequestBuilder.buildBasicRequestPaymentFileUpload(contentType, accessToken, payload)
+//                .body(payload)
+//                .post(path)
+//    }
+//
+//    String getRequiredInitiationPayload(String type) {
+//
+//        def paymentMap = [:]
+//        switch (type) {
+//            case ConnectorTestConstants.DOMESTIC_PAYMENTS:
+//                return PaymentRequestPayloads.initiationPayloadDomesticPayment(paymentMap)
+//            case ConnectorTestConstants.DOMESTIC_SCHEDULE:
+//                return PaymentRequestPayloads.initiationPayloadDomesticSchedulePayment(paymentMap)
+//            case ConnectorTestConstants.DOMESTIC_STANDING:
+//                return PaymentRequestPayloads.initiationPayloadDomesticStandingOrderPayment(paymentMap)
+//            case ConnectorTestConstants.INTERNATIONAL_PAYMENTS:
+//                return PaymentRequestPayloads.initiationPayloadInternationalPayment(paymentMap)
+//            case ConnectorTestConstants.INTERNATIONAL_STANDING_ORDER:
+//                return PaymentRequestPayloads.initiationPayloadInternationalStandingOrderPayment(paymentMap)
+//            case ConnectorTestConstants.INTERNATIONAL_SCHEDULE:
+//                return PaymentRequestPayloads.initiationPayloadInternationalSchedulePayment(paymentMap)
+//            case ConnectorTestConstants.FILE_PAYMENTS:
+//                return PaymentRequestPayloads.initiationPayloadFilePayment
+//        }
+//
+//    }
 }

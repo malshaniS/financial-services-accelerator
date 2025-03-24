@@ -19,6 +19,11 @@
 package org.wso2.financial.services.accelerator.test.framework.utility
 
 import com.fasterxml.uuid.Generators
+import com.nimbusds.jose.JWSHeader
+import com.nimbusds.jose.util.StandardCharset
+import org.jose4j.jws.JsonWebSignature
+import org.jose4j.lang.JoseException
+import org.wso2.bfsi.test.framework.CommonTest
 import org.wso2.bfsi.test.framework.exception.TestFrameworkException
 import org.wso2.financial.services.accelerator.test.framework.constant.ConnectorTestConstants
 import org.wso2.openbanking.test.framework.utility.OBTestUtil
@@ -27,11 +32,18 @@ import org.apache.http.conn.ssl.SSLSocketFactory
 import org.wso2.financial.services.accelerator.test.framework.configuration.ConfigurationService
 
 import java.nio.charset.Charset
+import java.security.Key
 import java.security.KeyStore
 import java.security.KeyStoreException
+import java.security.MessageDigest
 import java.security.NoSuchAlgorithmException
+import java.security.UnrecoverableEntryException
 import java.security.cert.Certificate
 import java.security.cert.CertificateException
+import java.security.cert.X509Certificate
+import java.security.interfaces.RSAPrivateKey
+import java.text.ParseException
+import java.time.Instant
 
 /**
  * Accelerator layer class to contain utilities.
@@ -207,5 +219,150 @@ class TestUtil extends OBTestUtil{
         } else {
             return new File(resource.getFile())
         }
+    }
+
+    static int getIdempotency() {
+        Random random = new Random()
+        int min = 1
+        int max = 1000000
+        def idempotency = random.nextInt(max-min) + min
+
+        return idempotency
+    }
+
+//    /**
+//     * Generate X-JWS Signature.
+//     *
+//     * @param header      Headers from the request
+//     * @param requestBody Request payload
+//     * @return x-jws-signature
+//     */
+//    public static String generateXjwsSignature(String header, String requestBody) {
+//
+//        char[] keyStorePassword = configurationService.getApplicationKeystorePassword().toCharArray();
+//        String keyStoreName = AppConfigReader.getApplicationKeystoreAlias();
+//
+//        try {
+//
+//            KeyStore keyStore = TestUtil.getApplicationKeyStore();
+//            Key key = keyStore.getKey(keyStoreName, keyStorePassword);
+//
+//            if (key instanceof RSAPrivateKey) {
+//
+//                JWSHeader jwsHeader = JWSHeader.parse(header);
+//                Object b64ValueObject = jwsHeader.getCustomParam(B64_CLAIM_KEY);
+//                boolean b64Value = b64ValueObject != null ? ((Boolean) b64ValueObject) : true;
+//
+//                // Create a new JsonWebSignature
+//                JsonWebSignature jws = new JsonWebSignature();
+//
+//                // Set the payload, or signed content, on the JWS object
+//                jws.setPayload(requestBody);
+//
+//                // Set the signature algorithm on the JWS that will integrity protect the payload
+//                jws.setAlgorithmHeaderValue(String.valueOf(jwsHeader.getAlgorithm()));
+//
+//                if (jwsHeader.getContentType() != null) {
+//                    jws.setContentTypeHeaderValue(jwsHeader.getContentType());
+//                }
+//
+//                if (jwsHeader.getType() != null) {
+//                    jws.setHeader("typ", String.valueOf(jwsHeader.getType()));
+//                }
+//
+//                // Setting headers
+//                jws.setKeyIdHeaderValue(jwsHeader.getKeyID());
+//                jws.setCriticalHeaderNames(jwsHeader.getCriticalParams().toArray(new String[0]));
+//
+//                if (b64ValueObject != null) {
+//                    jws.getHeaders().setObjectHeaderValue(B64_CLAIM_KEY, b64Value);
+//                }
+//
+//                for (Map.Entry<String, Object> entry : jwsHeader.getCustomParams().entrySet()) {
+//                    jws.getHeaders().setObjectHeaderValue(entry.getKey(), entry.getValue());
+//                }
+//
+//                // Set the signing key on the JWS
+//                jws.setKey(key);
+//
+//                // Sign the JWS and produce the detached JWS representation, which
+//                // is a string consisting of two dots ('.') separated base64url-encoded
+//                // parts in the form Header..Signature
+//                return jws.getDetachedContentCompactSerialization();
+//            }
+//
+//        } catch (ParseException | KeyStoreException e) {
+//            log.error("Error occurred while reading the KeyStore file", e);
+//        } catch (NoSuchAlgorithmException | JoseException e) {
+//            log.error("Error occurred while signing", e);
+//        } catch (UnrecoverableEntryException e) {
+//            log.error("Error occurred while retrieving the cert key");
+//        } catch (TestFrameworkException e) {
+//            log.error("Error occurred while reading the certificate thumb print", e);
+//        }
+//
+//        return " ";
+//    }
+
+    /**
+     * Returns the subject DN for the application certificate.
+     *
+     * @return subject DN
+     */
+    public static String getApplicationCertificateSubjectDn() {
+
+        X509Certificate certificate = (X509Certificate) getCertificateFromKeyStore();
+
+        if (certificate != null && certificate.getSubjectDN() != null) {
+            return certificate.getSubjectDN().getName();
+        }
+
+        return null;
+    }
+
+    static String getRequestHeader(String alg = configurationService.commonSigningAlgorithm,
+                                   String kid = configurationService.getAppKeyStoreSigningKid(),
+                                   String iss = TestUtil.getApplicationCertificateSubjectDn(),
+                                   String tan = "openbanking.org.uk",
+                                   String iat = Instant.now().getEpochSecond().minus(2),
+                                   String typ = "JOSE",
+                                   String cty = "application/json") {
+
+        def algorithm = alg
+        def clientKeyId = kid
+        def clientSubjectDN = iss
+        def trustAnchorDns = tan
+        def issuedAt = iat
+        def type = typ
+        def contentType = cty
+
+        def REQUEST_HEADER
+
+        REQUEST_HEADER = "{\n" +
+                    "\"alg\": \"${algorithm}\",\n" +
+                    "\"kid\": \"${clientKeyId}\",\n" +
+                    "\"typ\": \"${type}\",\n" +
+                    "\"cty\": \"${contentType}\",\n" +
+                    "\"http://openbanking.org.uk/iat\": ${issuedAt},\n" +
+                    "\"http://openbanking.org.uk/iss\": \"${clientSubjectDN}\", \n" +
+                    "\"http://openbanking.org.uk/tan\": \"${trustAnchorDns}\",\n" +
+                    "\"crit\": [ \"http://openbanking.org.uk/iat\",\n" +
+                    "\"http://openbanking.org.uk/iss\", \"http://openbanking.org.uk/tan\"] \n" +
+                    "}"
+
+        return REQUEST_HEADER
+
+    }
+
+    /**
+     * Method for generating the file hash of the payment file
+     *
+     * @param file - the payment file
+     * @return the SHA-256 hash of base64 encoded payment file
+     */
+    static generateFileHash(String file) {
+        String fileHash = new String(Base64.getEncoder().encode(MessageDigest.getInstance("SHA-256")
+                .digest(getFileContent(getFileFromResources(file)).getBytes(StandardCharset.UTF_8))),"UTF-8")
+        return fileHash
     }
 }

@@ -45,7 +45,7 @@ class SignatureAlgorithmValidationTest extends FSConnectorTest {
     private ConfigurationService configuration = new ConfigurationService()
 
     void authoriseConsent() {
-
+        configuration.setTppNumber(0)
         clientId = configuration.getAppInfoClientID()
         consentPath = ConnectorTestConstants.ACCOUNT_CONSENT_PATH
         initiationPayload = AccountsRequestPayloads.initiationPayload
@@ -61,7 +61,7 @@ class SignatureAlgorithmValidationTest extends FSConnectorTest {
 
     @Test
     void "OB-848_Validate token request contains client assertion signed with configured signature algorithm"() {
-
+        configuration.setTppNumber(0)
         authoriseConsent()
 
         Response tokenResponse = getUserAccessTokenResponse(ConnectorTestConstants.PKJWT_AUTH_METHOD, clientId,
@@ -79,7 +79,7 @@ class SignatureAlgorithmValidationTest extends FSConnectorTest {
 
     @Test
     void "OB-497_Validate token request contains client assertion signed with unsupported signature algorithm"() {
-
+        configuration.setTppNumber(0)
         JWTGenerator acceleratorJWTGenerator = new JWTGenerator()
         acceleratorJWTGenerator.setScopes(consentScopes)
         acceleratorJWTGenerator.setSigningAlgorithm("RS256")
@@ -102,7 +102,7 @@ class SignatureAlgorithmValidationTest extends FSConnectorTest {
 
     @Test
     void "OB-499_Validate token request contains client assertion signed with invalid certificate"() {
-
+        configuration.setTppNumber(0)
         String keystoreLocation = Paths.get(configuration.getTestArtifactLocation(),
                 "berlin-certs","eidas-qwac.jks")
         String alias = "1"
@@ -116,7 +116,7 @@ class SignatureAlgorithmValidationTest extends FSConnectorTest {
 
     @Test
     void "OB-500_Validate token request contains client assertion signed with expired certificate"() {
-
+        configuration.setTppNumber(0)
         String keystoreLocation = Paths.get(configuration.getTestArtifactLocation(),
                 "expired-certs", "signing-keystore", "signing.jks")
         String alias = "tpp4-sig"

@@ -50,7 +50,7 @@ class MtlsEnforcementValidationTest extends FSConnectorTest {
         List<String> scopes = [scope.scopeString]
         JWTGenerator generator = new JWTGenerator()
         generator.setScopes(scopes)
-        Response tokenResponse = FSRestAsRequestBuilder.buildRequest()
+        Response tokenResponse = FSRestAsRequestBuilder.buildBasicRequest()
                 .contentType(ConnectorTestConstants.ACCESS_TOKEN_CONTENT_TYPE)
                 .baseUri(configuration.getISServerUrl())
                 .header(ConnectorTestConstants.X_WSO2_MUTUAL_CERT, TestUtil.getPublicKeyFromTransportKeyStore())
@@ -171,7 +171,7 @@ class MtlsEnforcementValidationTest extends FSConnectorTest {
         List<String> scopes = [scope.scopeString]
         JWTGenerator generator = new JWTGenerator()
         generator.setScopes(scopes)
-        Response tokenResponse = FSRestAsRequestBuilder.buildRequest()
+        Response tokenResponse = FSRestAsRequestBuilder.buildBasicRequest()
                 .contentType(ConnectorTestConstants.ACCESS_TOKEN_CONTENT_TYPE)
                 .baseUri(configuration.getISServerUrl())
                 .header("mutual-auth-cert", TestUtil.getPublicKeyFromTransportKeyStore())
@@ -253,8 +253,7 @@ class MtlsEnforcementValidationTest extends FSConnectorTest {
         Response tokenResponse = FSRestAsRequestBuilder.buildRequest(keystoreLocation, password)
                 .contentType(ConnectorTestConstants.ACCESS_TOKEN_CONTENT_TYPE)
                 .baseUri(configuration.getISServerUrl())
-                .header(ConnectorTestConstants.X_WSO2_MUTUAL_CERT,
-                        OBKeyStore.getPublicKeyFromKeyStore(keystoreLocation, password, alias))
+                .header(ConnectorTestConstants.X_WSO2_MUTUAL_CERT, TestUtil.getPublicKeyFromTransportKeyStore())
                 .body(generator.getAppAccessTokenJwt(ConnectorTestConstants.TLS_AUTH_METHOD, clientId))
                 .post(ConnectorTestConstants.TOKEN_ENDPOINT_URL)
 

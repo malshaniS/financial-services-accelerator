@@ -57,7 +57,7 @@ class RefreshTokenGrantAccessToken extends FSConnectorTest {
 
 	@Test
 	void "Generate refresh token grant access token with pkjwt authentication"() {
-
+		configuration.setTppNumber(0)
 		authoriseConsent()
 
 		//Get User Access Token
@@ -83,7 +83,7 @@ class RefreshTokenGrantAccessToken extends FSConnectorTest {
 
 	@Test (dependsOnMethods = "Generate refresh token grant access token with pkjwt authentication")
 	void "Validate keyid of refresh token grant access token jwt"() {
-
+		configuration.setTppNumber(0)
 		HashMap<String, String> mapHeader = TestUtil.getJwtTokenHeader(refreshedAccessToken)
 
 		Assert.assertNotNull(mapHeader.get(ConnectorTestConstants.KID))
@@ -91,32 +91,53 @@ class RefreshTokenGrantAccessToken extends FSConnectorTest {
 
 	@Test (dependsOnMethods = "Validate keyid of refresh token grant access token jwt")
 	void "Validate additional claim binding to the refresh token grant access token jwt"() {
-
+		configuration.setTppNumber(0)
 		HashMap<String, String> mapPayload = TestUtil.getJwtTokenPayload(refreshedAccessToken)
 
 		Assert.assertTrue(mapPayload.get(ConnectorTestConstants.CNF).matches("x5t#S256:[a-zA-Z0-9-]+"))
+		Assert.assertTrue(mapPayload.get(ConnectorTestConstants.CONSENT_ID).matches(consentId))
 	}
 
-
 	@Test (dependsOnMethods = "Validate additional claim binding to the refresh token grant access token jwt")
-	void "Introspection call for user access token generated from refresh token"() {
+	void "Validate additional claims not binding to the id_token of user access token"() {
+		configuration.setTppNumber(0)
+		HashMap<String, String> mapPayload = TestUtil.getJwtTokenPayload(idToken)
 
+		Assert.assertNull(mapPayload.get(ConnectorTestConstants.CNF))
+		Assert.assertNull(mapPayload.get(ConnectorTestConstants.CONSENT_ID))
+	}
+
+	@Test (dependsOnMethods = "Validate additional claims not binding to the id_token of user access token")
+	void "Introspection call for user access token generated from refresh token"() {
+		configuration.setTppNumber(0)
 		Response introspectionResponse = getTokenIntrospectionResponse(refreshedAccessToken)
 		Assert.assertEquals(introspectionResponse.statusCode(), ConnectorTestConstants.STATUS_CODE_200)
 		Assert.assertEquals(TestUtil.parseResponseBody(introspectionResponse, "active"), "true")
 		Assert.assertNull(TestUtil.parseResponseBody(introspectionResponse, ConnectorTestConstants.GRANT_TYPE))
-		Assert.assertNotNull(TestUtil.parseResponseBody(introspectionResponse, ConnectorTestConstants.CNF))
+		Assert.assertNull(TestUtil.parseResponseBody(introspectionResponse, ConnectorTestConstants.CNF))
+		Assert.assertNull(TestUtil.parseResponseBody(introspectionResponse, ConnectorTestConstants.CONSENT_ID))
+		Assert.assertNotNull(TestUtil.parseResponseBody(introspectionResponse, ConnectorTestConstants.REFRESH_TOKEN_VALIDITY_PERIOD))
 	}
 
 	@Test (enabled = true)
 	void "OB-864_Generate refresh token grant access token for Regulatory Application"() {
 
 		configuration.setTppNumber(1)
+		clientId = configuration.getAppInfoClientID()
+		consentPath = ConnectorTestConstants.ACCOUNT_CONSENT_PATH
+		initiationPayload = AccountsRequestPayloads.initiationPayload
+
+		//Consent initiation
+		doDefaultInitiation(initiationPayload)
+		Assert.assertNotNull(consentId)
+
 		doConsentAuthorisation(configuration.getAppInfoClientID(), true, consentScopes)
 
 		//Get User Access Token
 		Response tokenResponse = getUserAccessTokenResponse(ConnectorTestConstants.TLS_AUTH_METHOD, clientId, code, consentScopes)
 		Assert.assertEquals(tokenResponse.statusCode(), ConnectorTestConstants.STATUS_CODE_200)
+		accessToken = TestUtil.parseResponseBody(tokenResponse, "access_token")
+		refreshToken = TestUtil.parseResponseBody(tokenResponse, "refresh_token")
 		Assert.assertNotNull(accessToken)
 		Assert.assertNotNull(refreshToken)
 
@@ -136,11 +157,21 @@ class RefreshTokenGrantAccessToken extends FSConnectorTest {
 
 		//Do Consent Initiation
 		configuration.setTppNumber(1)
+		clientId = configuration.getAppInfoClientID()
+		consentPath = ConnectorTestConstants.ACCOUNT_CONSENT_PATH
+		initiationPayload = AccountsRequestPayloads.initiationPayload
+
+		//Consent initiation
+		doDefaultInitiation(initiationPayload)
+		Assert.assertNotNull(consentId)
+
 		doConsentAuthorisation(configuration.getAppInfoClientID(), true, consentScopes)
 
 		//Get User Access Token
 		Response tokenResponse = getUserAccessTokenResponse(ConnectorTestConstants.TLS_AUTH_METHOD, clientId, code, consentScopes)
 		Assert.assertEquals(tokenResponse.statusCode(), ConnectorTestConstants.STATUS_CODE_200)
+		accessToken = TestUtil.parseResponseBody(tokenResponse, "access_token")
+		refreshToken = TestUtil.parseResponseBody(tokenResponse, "refresh_token")
 		Assert.assertNotNull(accessToken)
 		Assert.assertNotNull(refreshToken)
 
@@ -160,6 +191,13 @@ class RefreshTokenGrantAccessToken extends FSConnectorTest {
 
 		//Do Consent Initiation
 		configuration.setTppNumber(1)
+		clientId = configuration.getAppInfoClientID()
+		consentPath = ConnectorTestConstants.ACCOUNT_CONSENT_PATH
+		initiationPayload = AccountsRequestPayloads.initiationPayload
+
+		//Consent initiation
+		doDefaultInitiation(initiationPayload)
+		Assert.assertNotNull(consentId)
 		doConsentAuthorisation(configuration.getAppInfoClientID(), true, consentScopes)
 
 		//Get Refresh Token Grant User Access Token
@@ -179,17 +217,26 @@ class RefreshTokenGrantAccessToken extends FSConnectorTest {
 
 		//Do Consent Initiation
 		configuration.setTppNumber(1)
+		clientId = configuration.getAppInfoClientID()
+		consentPath = ConnectorTestConstants.ACCOUNT_CONSENT_PATH
+		initiationPayload = AccountsRequestPayloads.initiationPayload
+
+		//Consent initiation
+		doDefaultInitiation(initiationPayload)
+		Assert.assertNotNull(consentId)
 		doConsentAuthorisation(configuration.getAppInfoClientID(), true, consentScopes)
 
 		//Get User Access Token
 		Response tokenResponse = getUserAccessTokenResponse(ConnectorTestConstants.TLS_AUTH_METHOD, clientId, code, consentScopes)
 		Assert.assertEquals(tokenResponse.statusCode(), ConnectorTestConstants.STATUS_CODE_200)
+		accessToken = TestUtil.parseResponseBody(tokenResponse, "access_token")
+		refreshToken = TestUtil.parseResponseBody(tokenResponse, "refresh_token")
 		Assert.assertNotNull(accessToken)
 		Assert.assertNotNull(refreshToken)
 
 		//Get Refresh Token Grant User Access Token
-		Response refreshTokenResponse = getRefreshGrantTokenResponse(ConnectorTestConstants.TLS_AUTH_METHOD, "", [scope],
-				refreshToken.toString())
+		Response refreshTokenResponse = getRefreshGrantTokenResponseWithoutClientId(ConnectorTestConstants.TLS_AUTH_METHOD,
+				[scope], refreshToken.toString())
 
 		Assert.assertEquals(refreshTokenResponse.statusCode(), ConnectorTestConstants.STATUS_CODE_401)
 		Assert.assertEquals(TestUtil.parseResponseBody(refreshTokenResponse, ConnectorTestConstants.ERROR_DESCRIPTION),
@@ -203,11 +250,20 @@ class RefreshTokenGrantAccessToken extends FSConnectorTest {
 
 		//Do Consent Initiation
 		configuration.setTppNumber(1)
+		clientId = configuration.getAppInfoClientID()
+		consentPath = ConnectorTestConstants.ACCOUNT_CONSENT_PATH
+		initiationPayload = AccountsRequestPayloads.initiationPayload
+
+		//Consent initiation
+		doDefaultInitiation(initiationPayload)
+		Assert.assertNotNull(consentId)
 		doConsentAuthorisation(configuration.getAppInfoClientID(), true, consentScopes)
 
 		//Get User Access Token
 		Response tokenResponse = getUserAccessTokenResponse(ConnectorTestConstants.TLS_AUTH_METHOD, clientId, code, consentScopes)
 		Assert.assertEquals(tokenResponse.statusCode(), ConnectorTestConstants.STATUS_CODE_200)
+		accessToken = TestUtil.parseResponseBody(tokenResponse, "access_token")
+		refreshToken = TestUtil.parseResponseBody(tokenResponse, "refresh_token")
 		Assert.assertNotNull(accessToken)
 		Assert.assertNotNull(refreshToken)
 
@@ -219,10 +275,10 @@ class RefreshTokenGrantAccessToken extends FSConnectorTest {
 		Response refreshTokenResponse = getRefreshGrantTokenResponse(ConnectorTestConstants.TLS_AUTH_METHOD,
 				configuration.getAppInfoClientID(), [scope], refreshToken.toString())
 
-		Assert.assertEquals(tokenResponse.statusCode(), ConnectorTestConstants.STATUS_CODE_400)
-		Assert.assertEquals(TestUtil.parseResponseBody(tokenResponse, ConnectorTestConstants.ERROR_DESCRIPTION),
+		Assert.assertEquals(refreshTokenResponse.statusCode(), ConnectorTestConstants.STATUS_CODE_400)
+		Assert.assertEquals(TestUtil.parseResponseBody(refreshTokenResponse, ConnectorTestConstants.ERROR_DESCRIPTION),
 				"Persisted access token data not found")
-		Assert.assertEquals(TestUtil.parseResponseBody(tokenResponse, ConnectorTestConstants.ERROR),
+		Assert.assertEquals(TestUtil.parseResponseBody(refreshTokenResponse, ConnectorTestConstants.ERROR),
 				ConnectorTestConstants.INVALID_GRANT)
 	}
 

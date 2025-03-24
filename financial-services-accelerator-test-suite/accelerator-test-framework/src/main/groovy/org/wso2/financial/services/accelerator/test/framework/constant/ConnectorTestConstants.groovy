@@ -45,7 +45,7 @@ class ConnectorTestConstants {
     public static final String X_FAPI_FINANCIAL_ID = "x-fapi-financial-id"
     public static final String X_FAPI_FINANCIAL_ID_VALUE = "open-bank"
     public static final String X_IDEMPOTENCY_KEY = "x-idempotency-key"
-    public static final String X_JWS_SIGNATURE_CAPS = "x-jws-signature"
+    public static final String X_JWS_SIGNATURE = "x-jws-signature"
     public static final String X_FAPI_AUTH_DATE = "x-fapi-auth-date"
     public static final String X_FAPI_IP_ADDRESS = "x-fapi-customer-ip-address"
     public static final String X_CUSTOMER_USER_AGENT = "x-customer-user-agent"
@@ -195,7 +195,7 @@ class ConnectorTestConstants {
     static final String CONSENT_PATH = CONSENT_API + "/account-access-consents"
     static final String ACCOUNT_CONSENT_PATH = CONSENT_API + "/account-access-consents"
     static final String ACCOUNT_SUBMISSION_PATH = "/accounts/"
-    static final String PAYMENT_CONSENT_PATH = CONSENT_API + "/payment-consents"
+    static final String PAYMENT_CONSENT_PATH = CONSENT_API + "/domestic-payment-consents"
     static final String PAYMENT_SUBMISSION_PATH = "/payments"
     static final String COF_CONSENT_PATH = CONSENT_API + "/funds-confirmation-consents"
     static final String COF_SUBMISSION_PATH = "/funds-confirmations"
@@ -263,31 +263,85 @@ class ConnectorTestConstants {
     }
 
     public static final String OBIE_ERROR_FIELD_INVALID ="UK.OBIE.Field.Invalid"
-    static final String SCHEME_NAME_MAXLENGTH = "department test value 1212121212 department test value 1 department test value 1"
-    static final String NAME_MAXLENGTH = "department test value 1212121212 department test value 1 department test value 1" +
+    public static final String SCHEME_NAME_MAXLENGTH = "department test value 1212121212 department test value 1 department test value 1"
+    public static final String NAME_MAXLENGTH = "department test value 1212121212 department test value 1 department test value 1" +
             "department test value 1 department test value 1 department test value 1 department test value 1 department test value 1" +
             "department test value 1 department test value 1 department test value 1 department test value 1 department test value 1" +
             "department test value 1 department test value 1 department test value 1 department test value 1 department test value 1 " +
             "department test value 1 department test value 1 department test value 1 department test value 1 department test value 1"
 
-    static final String IDENTIFICATION_MAXLENGTH = "Account1Account1Account1Account1Account1Account1Account1Account1" +
+    public static final String IDENTIFICATION_MAXLENGTH = "Account1Account1Account1Account1Account1Account1Account1Account1" +
             "Account1Account1Account1Account1Account1Account1Account1Account1Account1Account1Account1Account1Account1" +
             "Account1Account1Account1Account1Account1Account1Account1Account1Account1Account1Account1Account1"
-    static final String SECONDARY_IDENTIFICATION_MAXLENGTH = "Account1Account1Account1Account1Account1Account1Account1"
+    public static final String SECONDARY_IDENTIFICATION_MAXLENGTH = "Account1Account1Account1Account1Account1Account1Account1"
 
-    final static String CONSENT_PATH_DOMESTIC = "/open-banking/v3.1/pisp/domestic-payment-consents"
-    final static String CONSENT_PATH_SCHEDULE = "/open-banking/v3.1/pisp/domestic-scheduled-payment-consents"
-    final static String CONSENT_PATH_STANDING_ORDERS = "/open-banking/v3.1/pisp/domestic-standing-order-consents"
-    final static String CONSENT_PATH_INTERNATIONAL_PAYMENTS = "/open-banking/v3.1/pisp/international-payment-consents"
-    final static String CONSENT_PATH_INTERNATIONAL_STANDING_ORDER = "/open-banking/v3.1/pisp/international-standing-order-consents"
-    final static String CONSENT_PATH_INTERNATIONAL_SCHEDULE = "/open-banking/v3.1/pisp/international-scheduled-payment-consents"
-    final static String CONSENT_PATH_FILE_PAYMENTS = "/open-banking/v3.1/pisp/file-payment-consents"
+    public final static String CONSENT_PATH_DOMESTIC = "/open-banking/v3.1/pisp/domestic-payment-consents"
+    public final static String CONSENT_PATH_SCHEDULE = "/open-banking/v3.1/pisp/domestic-scheduled-payment-consents"
+    public final static String CONSENT_PATH_STANDING_ORDERS = "/open-banking/v3.1/pisp/domestic-standing-order-consents"
+    public final static String CONSENT_PATH_INTERNATIONAL_PAYMENTS = "/open-banking/v3.1/pisp/international-payment-consents"
+    public final static String CONSENT_PATH_INTERNATIONAL_STANDING_ORDER = "/open-banking/v3.1/pisp/international-standing-order-consents"
+    public final static String CONSENT_PATH_INTERNATIONAL_SCHEDULE = "/open-banking/v3.1/pisp/international-scheduled-payment-consents"
+    public final static String CONSENT_PATH_FILE_PAYMENTS = "/open-banking/v3.1/pisp/file-payment-consents"
 
-    final static String SUBMISSION_PATH_DOMESTIC_PAYMENTS = "/open-banking/v3.1/pisp/domestic-payments"
-    final static String SUBMISSION_PATH_DOMESTIC_SCHEDULE = "/open-banking/v3.1/pisp/domestic-scheduled-payments"
-    final static String SUBMISSION_PATH_DOMESTIC_STANDING_ORDERS = "/open-banking/v3.1/pisp/domestic-standing-orders"
-    final static String SUBMISSION_PATH_INTERNATIONAL = "/open-banking/v3.1/pisp/international-payments"
-    final static String SUBMISSION_PATH_INTERNATIONAL_STANDING_ORDERS = "/open-banking/v3.1/pisp/international-standing-orders"
-    final static String SUBMISSION_PATH_INTERNATIONAL_SCHEDULE = "/open-banking/v3.1/pisp/international-scheduled-payments"
-    final static String SUBMISSION_PATH_FILE_PAYMENTS = "/open-banking/v3.1/pisp/file-payments"
+    public final static String SUBMISSION_PATH_DOMESTIC_PAYMENTS = "/open-banking/v3.1/pisp/domestic-payments"
+    public final static String SUBMISSION_PATH_DOMESTIC_SCHEDULE = "/open-banking/v3.1/pisp/domestic-scheduled-payments"
+    public final static String SUBMISSION_PATH_DOMESTIC_STANDING_ORDERS = "/open-banking/v3.1/pisp/domestic-standing-orders"
+    public final static String SUBMISSION_PATH_INTERNATIONAL = "/open-banking/v3.1/pisp/international-payments"
+    public final static String SUBMISSION_PATH_INTERNATIONAL_STANDING_ORDERS = "/open-banking/v3.1/pisp/international-standing-orders"
+    public final static String SUBMISSION_PATH_INTERNATIONAL_SCHEDULE = "/open-banking/v3.1/pisp/international-scheduled-payments"
+    public final static String SUBMISSION_PATH_FILE_PAYMENTS = "/open-banking/v3.1/pisp/file-payments"
+
+    public final static String INSTRUCTED_AMOUNT = "15.80"
+    public final static String CREDITOR_ACCOUNT_ID = "08080021325698"
+    public final static String DEBTOR_ACCOUNT_ID = "30080012343456"
+    public final static String MULTI_AUTH_DEBTOR_ACCOUNT = "30080098971337"
+
+    public static final String PAYLOAD_TYPE="payloadType"
+    public static final String INVALID_PARAM="invalidParam"
+    public static final String PATH="path"
+    public static final String PAYLOAD="payload"
+    public static final String X_IDEMPOTENCY_KEY_MAX_LENGTH = "x-idempotency-key_1234567890-x-idempotency-key_1234567890-x-idempotency-key_1234567890"
+    public static final String OBIE_ERROR_HEADER_INVALID="UK.OBIE.Header.Invalid"
+    public static final String ERROR_MESSAGE="Errors[0].Message"
+    public static final String OBIE_ERROR_HEADER_MISSING="UK.OBIE.Header.Missing"
+    public static final String OBIE_ERROR_SIGNATURE_MISSING = "UK.OBIE.Signature.Missing"
+    public static final String X_JWS_SIGNATURE_MISSING = "x-jws-signature missing"
+    public final static String DOMESTIC_PAYMENTS = "domestic-payments"
+    public final static String DOMESTIC_SCHEDULE = "domestic-schedule"
+    public final static String DOMESTIC_STANDING = "domestic-standing"
+    public final static String INTERNATIONAL_PAYMENTS = "international-payments"
+    public final static String INTERNATIONAL_STANDING_ORDER = "international-Standing-Order-payments"
+    public final static String INTERNATIONAL_SCHEDULE = "international-Schedule-payments"
+    public final static String FILE_PAYMENTS = "file-payments"
+    public final static String INVALID_PAYMENT_TYPE="test-payment"
+    public static final String X_JWS_SIGNATURE_CAPS = "X-Jws-Signature"
+    public static final String INTERACTION_ID = UUID.randomUUID().toString()
+    public static final String X_FAPI_CUSTOMER_LAST_LOGGED_TIME = "x-fapi-customer-last-logged-time"
+    public static final String RS256 = "RS256"
+    public static final String OBIE_ERROR_SIGNATURE_MALFORMED = "UK.OBIE.Signature.Malformed"
+    public static final String OBIE_ERROR_SIGNATURE_INVALID_CLAIM = "UK.OBIE.Signature.InvalidClaim"
+    public static final String JWS_TAN = "openbanking.org.uk"
+    public static final String TYP_JOSE = "JOSE"
+
+    //File Path to Payment Resources
+    public static final PAYMENT_FILE_RESOURCE_PATH = System.getProperty("user.dir") + "/src/test/resources/"
+    public static final String OBIE_ERROR_FIELD_MISSING="UK.OBIE.Field.Missing"
+    public static final String OBIE_ERROR_FIELD_INVALID_DATE="UK.OBIE.Field.InvalidDate"
+    public static final String AWAITING_UPLOAD= "AwaitingUpload"
+    public static final String REFRESH_TOKEN_VALIDITY_PERIOD = "refreshTokenValidityPeriod"
+    public static final String AWAITING_AUTHORISATION = "AwaitingAuthorisation"
+    public static final String DATA_STATUS_UPDATE_DATE_TIME = "Data.StatusUpdateDateTime"
+    public static final String DATA_CREATION_DATE_TIME_VALUE = "Data.CreationDateTime"
+    public static final String DATA_PERMISSIONS_VALUE = "Data.Permissions"
+    public static final String DATA_EXPIRATION_DATE_TIME_VALUE = "Data.ExpirationDateTime"
+    public static final String DATA_TRANSACTION_FROM_DATE_TIME_VALUE = "Data.TransactionFromDateTime"
+    public static final String DATA_TRANSACTION_TO_DATE_TIME_VALUE = "Data.TransactionToDateTime"
+    public static final String RISK = "Risk"
+    public static final String SELF_LINK = "Links.Self"
+    public static final String META_TOTAL_PAGES = "Meta.TotalPages"
+    static final String OBIE_ERROR_INVALID_FORMAT="UK.OBIE.Resource.InvalidFormat"
+    static final String OBIE_ERROR_RESOURCE_INVALID_CONSENT_STATUS = "UK.OBIE.Resource.InvalidConsentStatus"
+    static final String ERROR_PATH="Errors[0].Path"
+
+
 }

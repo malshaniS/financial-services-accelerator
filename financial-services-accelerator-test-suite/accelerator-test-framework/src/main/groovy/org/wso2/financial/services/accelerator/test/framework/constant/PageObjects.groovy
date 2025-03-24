@@ -53,4 +53,6 @@ class PageObjects {
     public static final String ACCOUNTS_PAGE_TXT = "//h5[contains(@class,'ui body')]"
     static final String PAYMENTS_SELECT_XPATH = """//option[@value="12345"]"""
     public static final String LBL_REDIRECT_ERROR = "//h3/following-sibling::p"
+
+    static final String ACCOUNT_DENY_XPATH = "//*[contains(@type,'reset')]"
 }

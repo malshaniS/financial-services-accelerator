@@ -38,7 +38,7 @@ class ClientCredentialGrantAccessTokenTest extends FSConnectorTest {
 
     @Test
     void "Generate client credential grant access token for deleted client"() {
-
+        configuration.setTppNumber(0)
         clientId = configuration.getAppInfoClientID()
         //Token Request for the deleted client
         Response tokenResponse = getApplicationAccessTokenResponse(ConnectorTestConstants.PKJWT_AUTH_METHOD,
@@ -53,7 +53,7 @@ class ClientCredentialGrantAccessTokenTest extends FSConnectorTest {
 
     @Test
     void "Validate token request for client with token_endpoint_auth_method private_key_jwt"() {
-
+        configuration.setTppNumber(0)
         Response tokenResponse = getApplicationAccessTokenResponse(ConnectorTestConstants.PKJWT_AUTH_METHOD,
                 clientId, [scope])
 
@@ -68,7 +68,7 @@ class ClientCredentialGrantAccessTokenTest extends FSConnectorTest {
 
     @Test (dependsOnMethods = "Validate token request for client with token_endpoint_auth_method private_key_jwt")
     void "Validate keyId of application access token jwt"() {
-
+        configuration.setTppNumber(0)
         HashMap<String, String> mapHeader = OBTestUtil.getJwtTokenHeader(accessToken)
 
         Assert.assertNotNull(mapHeader.get(ConnectorTestConstants.KID))
@@ -76,7 +76,7 @@ class ClientCredentialGrantAccessTokenTest extends FSConnectorTest {
 
     @Test (dependsOnMethods = "Validate token request for client with token_endpoint_auth_method private_key_jwt")
     void "Validate additional claim binding to the application access token jwt"() {
-
+        configuration.setTppNumber(0)
         HashMap<String, String> mapPayload = OBTestUtil.getJwtTokenPayload(accessToken)
 
         Assert.assertTrue(mapPayload.get(ConnectorTestConstants.CNF).matches("x5t#S256:[a-zA-Z0-9-]+"))
@@ -84,7 +84,7 @@ class ClientCredentialGrantAccessTokenTest extends FSConnectorTest {
 
     @Test (dependsOnMethods = "Validate additional claim binding to the application access token jwt")
     void "Introspection call for application access token"() {
-
+        configuration.setTppNumber(0)
         Response tokenResponse = getTokenIntrospectionResponse(accessToken)
         Assert.assertEquals(tokenResponse.statusCode(), ConnectorTestConstants.STATUS_CODE_200)
         Assert.assertEquals(TestUtil.parseResponseBody(tokenResponse, "active"), "true")

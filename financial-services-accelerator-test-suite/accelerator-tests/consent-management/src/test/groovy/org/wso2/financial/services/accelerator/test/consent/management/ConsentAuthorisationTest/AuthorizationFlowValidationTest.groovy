@@ -18,6 +18,10 @@
 
 package org.wso2.financial.services.accelerator.test.consent.management.ConsentAuthorisationTest
 
+import org.openqa.selenium.WebElement
+import org.openqa.selenium.support.ui.ExpectedConditions
+import org.openqa.selenium.support.ui.WebDriverWait
+import org.wso2.financial.services.accelerator.test.framework.automation.consent.BasicAuthAutomationStep
 import org.wso2.openbanking.test.framework.automation.OBBrowserAutomation
 import org.wso2.openbanking.test.framework.automation.WaitForRedirectAutomationStep
 import org.wso2.openbanking.test.framework.utility.OBTestUtil
@@ -382,7 +386,7 @@ class AuthorizationFlowValidationTest extends FSConnectorTest {
         //Authorise Consent
         AuthorisationBuilder authorisationBuilder = new AuthorisationBuilder()
         String authoriseUrl = authorisationBuilder.getAuthorizationRequestWithCustomAlgorithm(configuration.getAppInfoClientID(),
-                consentId, [ConnectorTestConstants.ApiScope.ACCOUNTS], true).toURI().toString()
+                consentId, consentScopes, true).toURI().toString()
 
         OBBrowserAutomation.AutomationContext automation
         automation = getBrowserAutomation(OBBrowserAutomation.DEFAULT_DELAY)
@@ -395,5 +399,43 @@ class AuthorizationFlowValidationTest extends FSConnectorTest {
 
         Assert.assertEquals(OBTestUtil.getErrorDescriptionFromUrl(URLDecoder.decode(automation.currentUrl.get())),
                 ConnectorTestConstants.INVALID_SIG_ALGO_ERROR)
+    }
+
+    @Test
+    void "TC0204020_Deny the Consent" () {
+
+        //Account Initiation
+        doDefaultInitiation()
+        Assert.assertNotNull(consentId)
+        Assert.assertEquals(consentResponse.getStatusCode(), ConnectorTestConstants.STATUS_CODE_201)
+
+        AuthorisationBuilder acceleratorAuthorisationBuilder = new AuthorisationBuilder()
+        String authoriseUrl = acceleratorAuthorisationBuilder.getAuthorizationRequest(clientId,
+                consentId, consentScopes, true).toURI().toString()
+
+        automation = getBrowserAutomation(ConnectorTestConstants.DEFAULT_DELAY)
+                .addStep(new BasicAuthAutomationStep(authoriseUrl))
+                .addStep { driver, context ->
+                    driver.manage().timeouts().implicitlyWait(5, TimeUnit.SECONDS)
+
+                    WebDriverWait wait = new WebDriverWait(driver, 10)
+                    if ((driver.findElements(By.xpath(PageObjects.CHK_SALARY_SAVER_ACC))).displayed) {
+                        driver.findElement(By.xpath(PageObjects.CHK_SALARY_SAVER_ACC)).click()
+                    }
+
+                    if ((driver.findElements(By.xpath(PageObjects.PAYMENTS_SELECT_XPATH))).displayed) {
+                        driver.findElement(By.xpath(PageObjects.PAYMENTS_SELECT_XPATH)).click()
+                    }
+                    WebElement btnApprove = wait.until(
+                            ExpectedConditions.elementToBeClickable(By.xpath(PageObjects.ACCOUNT_DENY_XPATH)))
+                    btnApprove.click()
+                }
+                .execute()
+
+        //Get Error from URL
+        String url = automation.currentUrl.get()
+        def errorMessage = url.split("error_description=")[1].split("&")[0].replaceAll("\\+"," ")
+
+        Assert.assertEquals(errorMessage, "User denied the consent")
     }
 }

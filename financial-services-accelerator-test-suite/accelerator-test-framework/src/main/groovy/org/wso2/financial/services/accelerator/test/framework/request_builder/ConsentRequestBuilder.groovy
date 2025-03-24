@@ -23,6 +23,7 @@ import io.restassured.specification.RequestSpecification
 import org.wso2.financial.services.accelerator.test.framework.configuration.ConfigurationService
 import org.wso2.financial.services.accelerator.test.framework.constant.ConnectorTestConstants
 import org.wso2.financial.services.accelerator.test.framework.utility.FSRestAsRequestBuilder
+import org.wso2.financial.services.accelerator.test.framework.utility.TestUtil
 
 import java.nio.charset.Charset
 
