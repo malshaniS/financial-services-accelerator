@@ -262,6 +262,7 @@ class ConnectorTestConstants {
         }
     }
 
+
     public static final String OBIE_ERROR_FIELD_INVALID ="UK.OBIE.Field.Invalid"
     public static final String SCHEME_NAME_MAXLENGTH = "department test value 1212121212 department test value 1 department test value 1"
     public static final String NAME_MAXLENGTH = "department test value 1212121212 department test value 1 department test value 1" +
