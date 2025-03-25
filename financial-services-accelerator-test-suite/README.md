@@ -8,4 +8,5 @@ financial-services-accelerator-test-suite/accelerator-test-framework/src/main/re
 and rename it as TestConfiguration.xml. Update the values in the file according to your environment.
 You can refer to the sample values given in the file itself when configuring the values.
 5. Go to [accelerator-test-suite](accelerator-test-suite) and build the project using `mvn clean install -Dmaven.test.skip=true`
-6. Go to the relevant test and run the test using green arrow in-front of the test method. 
+6. Go to the relevant test and run the test using green arrow in-front of the test method. (if you need to run the test case one by one)
+7. Otherwise, to run the entire module, goto the relevant module and run the suite using `mvn clean install`.
