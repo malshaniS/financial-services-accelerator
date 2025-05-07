@@ -18,6 +18,10 @@
 
 package org.wso2.financial.services.accelerator.test.framework
 
+import com.nimbusds.jwt.JWT
+import com.nimbusds.oauth2.sdk.ResponseMode
+import com.nimbusds.oauth2.sdk.id.ClientID
+import com.nimbusds.oauth2.sdk.id.Issuer
 import org.wso2.bfsi.test.framework.CommonTest
 import org.wso2.bfsi.test.framework.automation.WaitForRedirectAutomationStep
 import org.wso2.bfsi.test.framework.request_builder.SignedObject
@@ -41,12 +45,14 @@ import org.wso2.financial.services.accelerator.test.framework.constant.RequestPa
 import org.wso2.financial.services.accelerator.test.framework.request_builder.AuthorisationBuilder
 import org.wso2.financial.services.accelerator.test.framework.request_builder.ConsentRequestBuilder
 import org.wso2.financial.services.accelerator.test.framework.request_builder.EventNotificationRequestBuilder
+import org.wso2.financial.services.accelerator.test.framework.request_builder.JWTGenerator
 import org.wso2.financial.services.accelerator.test.framework.request_builder.TokenRequestBuilder
 import org.wso2.financial.services.accelerator.test.framework.utility.FSRestAsRequestBuilder
 import org.wso2.financial.services.accelerator.test.framework.utility.TestUtil
 
 import java.nio.charset.Charset
 import java.util.concurrent.TimeUnit
+import java.util.stream.Collectors
 
 /**
  * Base class for Accelerator Test.
@@ -99,6 +105,8 @@ class FSConnectorTest extends CommonTest{
     Response subscriptionRetrievalResponse
     Response subscriptionUpdateResponse
     Response subscriptionDeletionResponse
+    JWTGenerator generator
+    public String authoriseUrl
 
     //Consent scopes
     public List<ConnectorTestConstants.ApiScope> consentScopes = [
@@ -942,5 +950,97 @@ class FSConnectorTest extends CommonTest{
      */
     static String getBase64EncodedPayload(String payload) {
         return Base64.encoder.encodeToString(payload.getBytes(Charset.defaultCharset()))
+    }
+
+    /**
+     * Method for Pushed Authorisation Request
+     * @param requestObjectClaims
+     * @param clientId
+     * @param isStateParamRequired
+     * @param algorithm
+     * @return
+     */
+    Response doPushAuthorisationRequest(List <ConnectorTestConstants.ApiScope> scopeString, String consentId,
+                                        String clientId = configuration.getAppInfoClientID(),
+                                        String algorithm = null,
+                                        String redirectUrl = configuration.getAppDCRRedirectUri(),
+                                        String responseType = ConnectorTestConstants.RESPONSE_TYPE_CODE_ID_TOKEN,
+                                        boolean isStateParamRequired = true) {
+
+        Response parResponse
+        generator = new JWTGenerator()
+
+        //Generate Client Assertion
+        String assertionString = generator.getClientAssertionJwt(clientId)
+        String scopes = scopeString.collect { it.scopeString }.join(' ')
+
+        //Generate Request Object Claim
+        JWT getRequestObjectClaim = generator.getRequestObjectClaim(scopes, consentId, redirectUrl, clientId, responseType,
+                true, UUID.randomUUID().toString())
+
+        def bodyContent = [
+                (ConnectorTestConstants.CLIENT_ID_KEY)            : (clientId),
+                (ConnectorTestConstants.CLIENT_ASSERTION_TYPE_KEY): (ConnectorTestConstants.CLIENT_ASSERTION_TYPE),
+                (ConnectorTestConstants.CLIENT_ASSERTION_KEY)     : assertionString,
+                (ConnectorTestConstants.REQUEST_KEY)         : getRequestObjectClaim.getParsedString()
+        ]
+
+        if (algorithm != null) {
+            generator.setSigningAlgorithm(algorithm)
+        }
+
+        if (isStateParamRequired) {
+
+            parResponse = FSRestAsRequestBuilder.buildRequest()
+                    .contentType(ConnectorTestConstants.ACCESS_TOKEN_CONTENT_TYPE)
+                    .formParams(bodyContent)
+                    .baseUri(configuration.getISServerUrl())
+                    .post(ConnectorTestConstants.PAR_ENDPOINT)
+        } else {
+
+            parResponse = FSRestAsRequestBuilder.buildRequest()
+                    .contentType(ConnectorTestConstants.ACCESS_TOKEN_CONTENT_TYPE)
+                    .formParams(bodyContent)
+                    .baseUri(configuration.getISServerUrl())
+                    .post(ConnectorTestConstants.PAR_ENDPOINT)
+        }
+
+        return parResponse
+    }
+
+    void doConsentAuthorisationViaRequestUri(URI requestUri, String clientId = null) {
+
+        AuthorisationBuilder acceleratorAuthorisationBuilder = new AuthorisationBuilder()
+
+        if (clientId != null) {
+            authoriseUrl = acceleratorAuthorisationBuilder.getAuthorizationRequest(requestUri, clientId)
+                    .toURI().toString()
+        } else {
+            authoriseUrl = acceleratorAuthorisationBuilder.getAuthorizationRequest(requestUri)
+                    .toURI().toString()
+        }
+
+        automation = getBrowserAutomation(ConnectorTestConstants.DEFAULT_DELAY)
+                .addStep(new BasicAuthAutomationStep(authoriseUrl))
+                .addStep { driver, context ->
+                    driver.manage().timeouts().implicitlyWait(5, TimeUnit.SECONDS)
+
+                    WebDriverWait wait = new WebDriverWait(driver, 10)
+                    if ((driver.findElements(By.xpath(PageObjects.CHK_SALARY_SAVER_ACC))).displayed) {
+                        driver.findElement(By.xpath(PageObjects.CHK_SALARY_SAVER_ACC)).click()
+                    }
+
+                    if ((driver.findElements(By.xpath(PageObjects.PAYMENTS_SELECT_XPATH))).displayed) {
+                        driver.findElement(By.xpath(PageObjects.PAYMENTS_SELECT_XPATH)).click()
+                    }
+                    WebElement btnApprove = wait.until(
+                            ExpectedConditions.elementToBeClickable(By.xpath(PageObjects.BTN_APPROVE)))
+                    btnApprove.click()
+                }
+                .addStep(new WaitForRedirectAutomationStep())
+                .execute()
+
+        // Get Code From URL
+        code = TestUtil.getHybridCodeFromUrl(automation.currentUrl.get())
     }
 }

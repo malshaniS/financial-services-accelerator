@@ -24,6 +24,8 @@ import com.nimbusds.oauth2.sdk.Scope
 import com.nimbusds.oauth2.sdk.id.ClientID
 import com.nimbusds.oauth2.sdk.id.Issuer
 import com.nimbusds.oauth2.sdk.id.State
+import com.nimbusds.oauth2.sdk.pkce.CodeChallenge
+import com.nimbusds.oauth2.sdk.pkce.CodeChallengeMethod
 import org.wso2.financial.services.accelerator.test.framework.configuration.ConfigurationService
 import org.wso2.financial.services.accelerator.test.framework.constant.ConnectorTestConstants
 
@@ -439,6 +441,62 @@ class AuthorisationBuilder {
                     .scope(new Scope(params.get(ConnectorTestConstants.SCOPE_PARAMETER)))
                     .state(new State(params.get(ConnectorTestConstants.STATE_PARAMETER)))
                     .customParameter("nonce", params.get(ConnectorTestConstants.NONCE_PARAMETER))
+                    .build()
+    }
+
+    /**
+     * Accelerator Authorisation Builder for Default Authorisation Flow
+     * @param clientId
+     * @param consentId
+     * @param scopes
+     * @param isRegulatory
+     */
+    AuthorizationRequest getAuthorizationRequestWithoutIntentId(String clientId = getClientID().getValue(),
+                                                 List<ConnectorTestConstants.ApiScope> scopes, boolean isRegulatory) {
+
+        JWTGenerator generator = new JWTGenerator()
+        String scopeString = getScopeString(scopes)
+
+        request = new AuthorizationRequest.Builder(new ResponseType(), new ClientID(clientId))
+                    .responseType(ResponseType.parse(ConnectorTestConstants.AUTH_RESPONSE_TYPE))
+                    .endpointURI(getEndpoint())
+                    .redirectionURI(getRedirectURI())
+                    .requestObject(generator.getSignedAuthRequestObjectWithoutConsentId(scopeString, new ClientID(clientId),
+                            new Issuer(clientId)))
+                    .scope(new Scope(scopeString))
+                    .state(getState())
+                    .customParameter("nonce", ConnectorTestConstants.NONCE_PARAMETER)
+                    .build()
+    }
+
+    AuthorizationRequest getAuthorizationRequest(URI requestUri, String clientID = getClientID().getValue(),
+                                                 boolean isStateParamPresent = true) {
+
+        if(isStateParamPresent) {
+            request = new AuthorizationRequest.Builder(requestUri, new ClientID(clientID))
+                    .state(getState())
+                    .redirectionURI(configuration.getAppDCRRedirectUri().toURI())
+                    .endpointURI(getEndpoint())
+                    .build()
+        } else {
+            request = new AuthorizationRequest.Builder(requestUri, new ClientID(clientID))
+                    .endpointURI(getEndpoint())
+                    .redirectionURI(configuration.getAppDCRRedirectUri().toURI())
+                    .build()
+        }
+
+        return request
+    }
+
+    AuthorizationRequest getAuthorizationRequestWithRequestParams(String clientId = getClientID().getValue(), String scope) {
+
+        request = new AuthorizationRequest.Builder(new ResponseType(), new ClientID(clientId))
+                    .responseType(ResponseType.parse(ConnectorTestConstants.AUTH_RESPONSE_TYPE))
+                    .endpointURI(getEndpoint())
+                    .redirectionURI(getRedirectURI())
+                    .scope(new Scope(scope))
+                    .state(getState())
+                    .customParameter("nonce", ConnectorTestConstants.NONCE_PARAMETER)
                     .build()
     }
 }

@@ -436,4 +436,35 @@ class TokenRequestBuilder {
         return "${ConnectorTestConstants.ApiScope.OPEN_ID.scopeString} " +
                 "${String.join(" ", scopes.collect({ it.scopeString }))}"
     }
+
+    /**
+     * Method to get application access token with defined JTI.
+     * @param scopes
+     * @param clientId
+     * @param jti
+     * @return
+     */
+    static Response getApplicationAccessTokenResponseWithDefinedJti(List <ConnectorTestConstants.ApiScope> scopeString,
+                                                                    String clientId, String jti) {
+
+        List<String> scopes = scopeString.collect { it.scopeString }.toList()
+
+        JWTGenerator generator = new JWTGenerator()
+        generator.setScopes(scopes)
+        //Adding Client Assertion for other Auth Method types
+        JSONObject clientAssertion = new JSONRequestGenerator().addIssuer(clientId)
+                .addSubject(clientId).addAudience().addIssuedAt().addExpireDate().addJti(jti).getJsonObject()
+
+        String payload = generator.getSignedRequestObject(clientAssertion.toString())
+        String accessTokenJWT = new PayloadGenerator().addGrantType().addScopes(scopes).addClientAsType()
+                .addClientAssertion(payload).addRedirectUri().addClientID(clientId).getPayload()
+
+        RestAssured.baseURI = configuration.getISServerUrl()
+        Response response = FSRestAsRequestBuilder.buildRequest()
+                .contentType(ConnectorTestConstants.ACCESS_TOKEN_CONTENT_TYPE)
+                .body(accessTokenJWT)
+                .post(ConnectorTestConstants.TOKEN_ENDPOINT)
+
+        return response
+    }
 }

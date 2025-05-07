@@ -27,8 +27,12 @@ import com.nimbusds.jose.Payload
 import com.nimbusds.jose.crypto.RSASSASigner
 import com.nimbusds.jwt.JWT
 import com.nimbusds.jwt.SignedJWT
+import com.nimbusds.oauth2.sdk.ResponseMode
 import com.nimbusds.oauth2.sdk.id.ClientID
 import com.nimbusds.oauth2.sdk.id.Issuer
+import com.nimbusds.oauth2.sdk.pkce.CodeChallenge
+import com.nimbusds.oauth2.sdk.pkce.CodeChallengeMethod
+import org.apache.commons.lang3.StringUtils
 import org.wso2.bfsi.test.framework.exception.TestFrameworkException
 import org.wso2.bfsi.test.framework.keystore.KeyStore
 import org.wso2.bfsi.test.framework.request_builder.JSONRequestGenerator
@@ -477,5 +481,180 @@ class JWTGenerator {
                     .getPayload()
             return accessTokenPayload
         }
+    }
+
+    JWT getSignedAuthRequestObjectWithoutConsentId(String scopeString,
+                                   ClientID clientId,
+                                   Issuer iss,
+                                   String state = ConnectorTestConstants.STATE_PARAMETER,
+                                   String nonce = ConnectorTestConstants.NONCE_PARAMETER,
+                                   String response_type = ConnectorTestConstants.RESPONSE_TYPE_PARAMETER,
+                                   String audienceValue = acceleratorConfiguration.getConsentAudienceValue(),
+                                   String redirectUrl = acceleratorConfiguration.getAppDCRRedirectUri()) {
+
+        def expiryDate = Instant.now().plus(58, ChronoUnit.MINUTES)
+        def notBefore = Instant.now()
+
+        JSONObject critString = new ArrayList<String>() {
+            {
+                add(ConnectorTestConstants.B64_PARAMETER)
+                add(ConnectorTestConstants.CRIT_IAT_URL)
+                add(ConnectorTestConstants.CRIT_ISS_URL)
+                add(ConnectorTestConstants.CRIT_TAN_URL)
+            }
+        }
+
+        JSONObject acr = new JSONObject().put(ConnectorTestConstants.ESSENTIAL, true).put(ConnectorTestConstants.VALUES, new ArrayList<String>() {
+            {
+                add(ConnectorTestConstants.ACR_CA_URL)
+                add(ConnectorTestConstants.ACR_SCA_URL)
+            }
+        })
+
+        JSONObject claimsString = new JSONObject().put(
+                ConnectorTestConstants.ID_TOKEN_PARAMETER,
+                new JSONObject().put(ConnectorTestConstants.ACR_PARAMETER, acr)
+        )
+
+        String claims = new JSONRequestGenerator()
+                .addCustomJson(ConnectorTestConstants.CRIT_PARAMETER, critString)
+                .addAudience(audienceValue)
+                .addScope(scopeString)
+                .addExpireDate(expiryDate.getEpochSecond().toLong())
+                .addCustomJson(ConnectorTestConstants.CLAIMS_PARAMETER, claimsString)
+                .addIssuer(iss.toString())
+                .addResponseType()
+                .addRedirectURI()
+                .addState(UUID.randomUUID().toString())
+                .addNonce()
+                .addClientID(clientId.toString())
+                .addCustomValue("nbf", notBefore.getEpochSecond().toLong())
+                .getJsonObject().toString()
+
+        String payload = getSignedRequestObject(claims)
+
+        Reporter.log("Authorisation Request Object")
+        Reporter.log("JWS Payload ${new Payload(claims).toString()}")
+
+        return SignedJWT.parse(payload)
+    }
+
+    /**
+     * Get Client Assertion.
+     * @param clientId - Client ID
+     * @return clientAssertion - Client Assertion
+     */
+    String getClientAssertionJwt(String clientId=null) {
+        JSONObject clientAssertion = new JSONRequestGenerator().addIssuer(clientId)
+                .addSubject(clientId).addAudience().addExpireDate().addIssuedAt().addJti().getJsonObject()
+
+        String payload = getSignedRequestObject(clientAssertion.toString())
+        return payload
+    }
+
+    String getClientAssertionJwtWithoutIAT(String clientId=null) {
+        JSONObject clientAssertion = new JSONRequestGenerator().addIssuer(clientId)
+                .addSubject(clientId).addAudience().addExpireDate().addJti().getJsonObject()
+
+        String payload = getSignedRequestObject(clientAssertion.toString())
+        return payload
+    }
+
+    /**
+     * Get Client Assertion with customized Issuer and Audience
+     * @param issuer Issuer
+     * @param audience Audience
+     * @return jwt
+     */
+    String getClientAssertionJwt(String issuer, String audience) {
+        JSONObject clientAssertion = new JSONRequestGenerator().addIssuer(issuer)
+                .addSubject(issuer).addAudience(audience).addExpireDate().addIssuedAt().addJti().getJsonObject()
+
+        String payload = getSignedRequestObject(clientAssertion.toString())
+        return payload
+    }
+
+    /**
+     * Get Request Object for Pushed Authorisation Request.
+     * @param scopeString
+     * @param consentId
+     * @param redirect_uri
+     * @param clientId
+     * @param responseType
+     * @param isStateRequired
+     * @param state
+     * @param responseMode
+     * @param expiryDate
+     * @param notBefore
+     * @param codeChallengeMethod
+     * @return
+     */
+    JWT getRequestObjectClaim(String scopeString, String consentId, String redirect_uri, String clientId, String responseType,
+                                 boolean isStateRequired = true, String state, String responseMode = ResponseMode.JWT,
+                                 Instant expiryDate = Instant.now().plus(1, ChronoUnit.HOURS),
+                                 Instant notBefore = Instant.now(), CodeChallengeMethod codeChallengeMethod = CodeChallengeMethod.S256) {
+        String claims
+
+        //Generate Code Challenge
+        CodeChallenge codeChallenge = CodeChallenge.compute(codeChallengeMethod, ConnectorTestConstants.CODE_VERIFIER)
+        String codeChallengeValue = codeChallenge.getValue()
+
+        //Define additional claims
+        JSONObject acr = new JSONObject().put(ConnectorTestConstants.ESSENTIAL, true).put(ConnectorTestConstants.VALUES, new ArrayList<String>() {
+            {
+                add(ConnectorTestConstants.ACR_CA_URL)
+                add(ConnectorTestConstants.ACR_SCA_URL)
+            }
+        })
+        JSONObject authTimeString = new JSONObject().put("essential", true)
+        JSONObject maxAgeString = new JSONObject().put("essential", true).put("max_age", 86400)
+        JSONObject userInfoString = new JSONObject().put("name", null).put("given_name", null).put("family_name", null).put("updated_at", Instant.now())
+        JSONObject claimsString = new JSONObject().put("id_token", new JSONObject().put("acr", acr).put("auth_time", authTimeString))
+
+        if (isStateRequired) {
+            claims = new JSONRequestGenerator()
+                    .addAudience()
+                    .addResponseType(responseType)
+                    .addExpireDate(expiryDate.getEpochSecond().toLong())
+                    .addClientID(clientId)
+                    .addIssuer(clientId)
+                    .addRedirectURI(redirect_uri)
+                    .addScope(scopeString)
+                    .addState(state)
+                    .addNonce()
+                    .addCustomValue("max_age", maxAgeString)
+                    .addCustomValue("nbf", notBefore.getEpochSecond().toLong())
+                    .addCustomJson("claims", claimsString)
+                    .addCustomValue("response_mode", responseMode)
+                    .addCustomValue("userinfo", userInfoString)
+                    .addCustomValue("code_challenge_method", codeChallengeMethod)
+                    .addCustomValue("code_challenge", codeChallengeValue)
+                    .getJsonObject().toString()
+        } else {
+            claims = new JSONRequestGenerator()
+                    .addAudience()
+                    .addResponseType(responseType)
+                    .addExpireDate(expiryDate.getEpochSecond().toLong())
+                    .addClientID(clientId)
+                    .addIssuer(clientId)
+                    .addRedirectURI(redirect_uri)
+                    .addScope(scopeString)
+                    .addNonce()
+                    .addCustomValue("max_age", maxAgeString)
+                    .addCustomValue("nbf", notBefore.getEpochSecond().toLong())
+                    .addCustomJson("claims", claimsString)
+                    .addCustomValue("response_mode", responseMode)
+                    .addCustomValue("userinfo", userInfoString)
+                    .addCustomValue("code_challenge_method", codeChallengeMethod)
+                    .addCustomValue("code_challenge", codeChallengeValue)
+                    .getJsonObject().toString()
+        }
+
+        String payload = getSignedRequestObject(claims)
+
+        Reporter.log("Authorisation Request Object")
+        Reporter.log("JWS Payload ${new Payload(claims).toString()}")
+
+        return SignedJWT.parse(payload)
     }
 }

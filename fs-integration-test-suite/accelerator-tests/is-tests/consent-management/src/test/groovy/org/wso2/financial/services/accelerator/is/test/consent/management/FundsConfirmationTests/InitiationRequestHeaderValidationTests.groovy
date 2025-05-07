@@ -115,9 +115,10 @@ class InitiationRequestHeaderValidationTests extends FSConnectorTest {
         Assert.assertEquals(errorMessage, "AuthenticationHandler not found.")
     }
 
-    @Test
+    @Test (priority = 1)
     void "Funds Confirmation Initiation With Invalid Authorization Header"() {
 
+        configuration.setPsuNumber(1)
         def accessToken = getBasicAuthHeader(configuration.getUserPSUName(),
                 configuration.getUserPSUPWD())
 
@@ -133,7 +134,8 @@ class InitiationRequestHeaderValidationTests extends FSConnectorTest {
 
         Assert.assertEquals(consentResponse.statusCode(), ConnectorTestConstants.STATUS_CODE_401)
         def errorMessage = TestUtil.parseResponseBody(consentResponse,ConnectorTestConstants.DESCRIPTION)
-        Assert.assertEquals(errorMessage, "AuthenticationHandler not found.")
+        Assert.assertEquals(errorMessage, "Authorization failure. Authorization information was " +
+                "invalid or missing from your request.")
     }
 
     @Test

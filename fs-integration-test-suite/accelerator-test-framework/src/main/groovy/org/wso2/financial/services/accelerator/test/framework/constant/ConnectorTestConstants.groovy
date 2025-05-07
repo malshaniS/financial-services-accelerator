@@ -18,6 +18,7 @@
 
 package org.wso2.financial.services.accelerator.test.framework.constant
 
+import com.nimbusds.oauth2.sdk.pkce.CodeVerifier
 import org.wso2.bfsi.test.framework.constant.Constants
 import org.wso2.financial.services.accelerator.test.framework.configuration.ConfigurationService
 
@@ -75,9 +76,9 @@ class ConnectorTestConstants extends Constants{
     //Error Responses
     static final String ERROR = "error"
     static final String ERROR_DESCRIPTION = "error_description"
-    static final String ERROR_ERRORS_CODE = "errors[0].code"
-    static final String ERROR_ERRORS_MSG = "errors[0].message"
-    static final String ERROR_ERRORS_DESCRIPTION = "errors[0].description"
+    static final String ERROR_ERRORS_CODE = "error.code"
+    static final String ERROR_ERRORS_MSG = "error.message"
+    static final String ERROR_ERRORS_DESCRIPTION = "error.description"
     static final String ERROR_CODE = "errorCode"
     static final String MESSAGE = "message"
     static final String DESCRIPTION = "description"
@@ -305,4 +306,9 @@ class ConnectorTestConstants extends Constants{
     final static String URL_EVENT_SUBSCRIPTION_BY_EVENT_TYPE = "/type/" + RESOURCE_UPDATE_EVENT_TYPE
     final static String X_WSO2_RESOURCE_ID = "x-wso2-resource-id"
     final static String PATH_EVENT_SUBSCRIPTION_ID = "subscriptionId"
+    public static final String PAR_ENDPOINT = "oauth2/par"
+    public static final String REQUEST_URI = "request_uri"
+    public static final String RESPONSE_EXPIRES_IN = "expires_in"
+    public static final String RESPONSE_TYPE_CODE_ID_TOKEN = "code id_token"
+    public static final CodeVerifier CODE_VERIFIER = new CodeVerifier()
 }
